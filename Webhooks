@@ -1,0 +1,8 @@
+# Set Web Hook for RichardPHJBensonBot
+GET https://api.telegram.org/bot{my_bot_token}/setWebhook?url={url_to_google_cloud_platform}
+
+# Set Web Hook for aBarberoBot
+GET https://api.telegram.org/bot{my_bot_token}/setWebhook?url={url_to_google_cloud_platform}
+
+# Set Web Hook for CalandroBot
+GET https://api.telegram.org/bot{my_bot_token}/setWebhook?url={url_to_google_cloud_platform}
