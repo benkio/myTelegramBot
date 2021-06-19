@@ -11,16 +11,15 @@ import com.benkio.telegrambotinfrastructure.model._
 import scala.util.Random
 import telegramium.bots.high._
 import telegramium.bots.Message
-import cats._
 import com.lightbend.emoji.ShortCodes.Implicits._
 import com.lightbend.emoji.ShortCodes.Defaults._
 
-class CalandroBot[F[_]]()(implicit
-    timerF: Timer[F],
-    parallelF: Parallel[F],
-    effectF: Effect[F],
-    api: telegramium.bots.high.Api[F]
-) extends BotSkeleton[F]()(timerF, parallelF, effectF, api) {
+class CalandroBot[F[_]](port: Int, url: String)(implicit
+  timerF: Timer[F],
+  concurrentEffectF: ConcurrentEffect[F],
+  contextShiftF: ContextShift[F],
+  api: telegramium.bots.high.Api[F]
+) extends BotSkeleton[F](port, url)(timerF, concurrentEffectF, contextShiftF, api) {
 
   override val resourceSource: ResourceSource = CalandroBot.resourceSource
 
@@ -60,7 +59,7 @@ class CalandroBot[F[_]]()(implicit
           ResourceSource
             .selectResourceAccess(All("calandro.db"))
             .getResourcesByKind("cards")
-            .use[F, List[MediaFile]](x => effectF.pure(x))
+            .use[F, List[MediaFile]](x => concurrentEffectF.pure(x))
         )
         .unsafeRunSync(),
       replySelection = RandomSelection
@@ -143,16 +142,16 @@ object CalandroBot extends Configurations {
       TextTrigger(List(StringTextTriggerValue("ambulanza"), StringTextTriggerValue(e":ambulance:"))),
       text = TextReply(
         _ =>
+        List(
           List(
-            List(
-              Emoji(0x1f624).toString      // 😤
-                ++ Emoji(0x1f918).toString // 🤘
-                ++ Emoji(0x1f91e).toString // 🤞
-                ++ Emoji(0x1f91e).toString // 🤞
-                ++ Emoji(0x1f918).toString // 🤘
-                ++ Emoji(0x1f624).toString // 😤
-            )
-          ),
+            Emoji(0x1f624).toString      // 😤
+              ++ Emoji(0x1f918).toString // 🤘
+              ++ Emoji(0x1f91e).toString // 🤞
+              ++ Emoji(0x1f91e).toString // 🤞
+              ++ Emoji(0x1f918).toString // 🤘
+              ++ Emoji(0x1f624).toString // 😤
+          )
+        ),
         false
       )
     ),
@@ -164,7 +163,7 @@ object CalandroBot extends Configurations {
       TextTrigger(List(StringTextTriggerValue("videogioc"), StringTextTriggerValue(e":video_game:"))),
       text = TextReply(
         _ =>
-          List(List(s"GIOCHI PER IL MIO PC #${Random.nextInt(Int.MaxValue)}??No ma io non lo compro per i giochi!!!")),
+        List(List(s"GIOCHI PER IL MIO PC #${Random.nextInt(Int.MaxValue)}??No ma io non lo compro per i giochi!!!")),
         false
       )
     ),
@@ -176,24 +175,23 @@ object CalandroBot extends Configurations {
       MessageLengthTrigger(280),
       text = TextReply(
         (msg: Message) =>
-          List(List(s"""wawaaa rischio calandrico in aumento(${msg.text.getOrElse("").length} / 280)""")),
+        List(List(s"""wawaaa rischio calandrico in aumento(${msg.text.getOrElse("").length} / 280)""")),
         true
       )
     )
   )
 
   def buildBot[F[_], A](
-      executorContext: ExecutionContext,
-      action: CalandroBot[F] => F[A]
+    executorContext: ExecutionContext,
+    action: CalandroBot[F] => F[A]
   )(implicit
-      timerF: Timer[F],
-      parallelF: Parallel[F],
-      contextShiftF: ContextShift[F],
-      concurrentEffectF: ConcurrentEffect[F]
+    timerF: Timer[F],
+    contextShiftF: ContextShift[F],
+    concurrentEffectF: ConcurrentEffect[F]
   ): F[A] =
     BlazeClientBuilder[F](executorContext).resource
       .use { client =>
         implicit val api: Api[F] = BotApi(client, baseUrl = s"https://api.telegram.org/bot$token")
-        action(new CalandroBot[F]())
+        action(new CalandroBot[F](80, "google_cloud_platform_url"))
       }
 }

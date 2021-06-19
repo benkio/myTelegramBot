@@ -11,14 +11,13 @@ import com.benkio.telegrambotinfrastructure.model._
 import com.lightbend.emoji.ShortCodes.Implicits._
 import com.lightbend.emoji.ShortCodes.Defaults._
 import telegramium.bots.high._
-import cats._
 
-class RichardPHJBensonBot[F[_]]()(implicit
-    timerF: Timer[F],
-    parallelF: Parallel[F],
-    effectF: Effect[F],
-    api: telegramium.bots.high.Api[F]
-) extends BotSkeleton[F]()(timerF, parallelF, effectF, api) {
+class RichardPHJBensonBot[F[_]](port: Int, url: String)(implicit
+  timerF: Timer[F],
+  concurrentEffectF: ConcurrentEffect[F],
+  contextShiftF: ContextShift[F],
+  api: telegramium.bots.high.Api[F]
+) extends BotSkeleton[F](port, url)(timerF, concurrentEffectF, contextShiftF, api) {
 
   override val resourceSource: ResourceSource = RichardPHJBensonBot.resourceSource
 
@@ -1887,13 +1886,13 @@ object RichardPHJBensonBot extends Configurations {
       trigger = CommandTrigger("bensonify"),
       text = TextReply(
         msg =>
-          msg.text
-            .filterNot(t => t.trim == "/bensonify" || t.trim == "/bensonify@RichardPHJBensonBot")
-            .map(t => {
-              val (_, inputTrimmed) = t.span(_ != ' ')
-              List(List(Bensonify.compute(inputTrimmed)))
-            })
-            .getOrElse(List(List("E PARLAAAAAAA!!!!"))),
+        msg.text
+          .filterNot(t => t.trim == "/bensonify" || t.trim == "/bensonify@RichardPHJBensonBot")
+          .map(t => {
+            val (_, inputTrimmed) = t.span(_ != ' ')
+            List(List(Bensonify.compute(inputTrimmed)))
+          })
+          .getOrElse(List(List("E PARLAAAAAAA!!!!"))),
         true
       )
     ),
@@ -1930,13 +1929,13 @@ carattere '!':
     )
   )
 
-  def buildBot[F[_]: Timer: Parallel: ContextShift: ConcurrentEffect, A](
-      executorContext: ExecutionContext,
-      action: RichardPHJBensonBot[F] => F[A]
+  def buildBot[F[_]: Timer: ContextShift: ConcurrentEffect, A](
+    executorContext: ExecutionContext,
+    action: RichardPHJBensonBot[F] => F[A]
   ): F[A] =
     BlazeClientBuilder[F](executorContext).resource
       .use { client =>
         implicit val api: Api[F] = BotApi(client, baseUrl = s"https://api.telegram.org/bot$token")
-        action(new RichardPHJBensonBot[F]())
+        action(new RichardPHJBensonBot[F](80, "google_cloud_platform_url"))
       }
 }
