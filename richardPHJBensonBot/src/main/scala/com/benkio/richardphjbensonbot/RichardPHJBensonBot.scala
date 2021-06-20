@@ -11,13 +11,14 @@ import com.benkio.telegrambotinfrastructure.model._
 import com.lightbend.emoji.ShortCodes.Implicits._
 import com.lightbend.emoji.ShortCodes.Defaults._
 import telegramium.bots.high._
+import cats._
 
-class RichardPHJBensonBot[F[_]](port: Int, url: String)(implicit
-  timerF: Timer[F],
-  concurrentEffectF: ConcurrentEffect[F],
-  contextShiftF: ContextShift[F],
-  api: telegramium.bots.high.Api[F]
-) extends BotSkeleton[F](port, url)(timerF, concurrentEffectF, contextShiftF, api) {
+class RichardPHJBensonBot[F[_]]()(implicit
+    timerF: Timer[F],
+    parallelF: Parallel[F],
+    effectF: Effect[F],
+    api: telegramium.bots.high.Api[F]
+) extends BotSkeleton[F]()(timerF, parallelF, effectF, api) {
 
   override val resourceSource: ResourceSource = RichardPHJBensonBot.resourceSource
 
@@ -540,7 +541,7 @@ object RichardPHJBensonBot extends Configurations {
           StringTextTriggerValue("anguille"),
           StringTextTriggerValue("polipi"),
           StringTextTriggerValue("cetrioli"),
-          StringTextTriggerValue("suonare")
+          RegexTextTriggerValue(".*problema.*suonare.*".r)
         )
       ),
       List(MediaFile("problema.mp3"))
@@ -1483,13 +1484,10 @@ object RichardPHJBensonBot extends Configurations {
     ),
     ReplyBundleMessage(
       TextTrigger(List(StringTextTriggerValue("feelings"))),
-      List(MediaFile("feelings.mp3"))
-    ),
-    ReplyBundleMessage(
-      TextTrigger(List(StringTextTriggerValue("feelings"))),
       List(
         MediaFile("feelings.gif"),
         MediaFile("feelings2.gif"),
+        MediaFile("feelings.mp3")
       ),
       replySelection = RandomSelection
     ),
@@ -1886,13 +1884,13 @@ object RichardPHJBensonBot extends Configurations {
       trigger = CommandTrigger("bensonify"),
       text = TextReply(
         msg =>
-        msg.text
-          .filterNot(t => t.trim == "/bensonify" || t.trim == "/bensonify@RichardPHJBensonBot")
-          .map(t => {
-            val (_, inputTrimmed) = t.span(_ != ' ')
-            List(List(Bensonify.compute(inputTrimmed)))
-          })
-          .getOrElse(List(List("E PARLAAAAAAA!!!!"))),
+          msg.text
+            .filterNot(t => t.trim == "/bensonify" || t.trim == "/bensonify@RichardPHJBensonBot")
+            .map(t => {
+              val (_, inputTrimmed) = t.span(_ != ' ')
+              List(List(Bensonify.compute(inputTrimmed)))
+            })
+            .getOrElse(List(List("E PARLAAAAAAA!!!!"))),
         true
       )
     ),
@@ -1928,14 +1926,22 @@ carattere '!':
       )
     )
   )
+  def token[F[_]](implicit effectF: Effect[F]): Resource[F, String] =
+    ResourceAccess.fileSystem.getResourceByteArray[F]("richardPHJBensonBot.token").map(_.map(_.toChar).mkString)
 
-  def buildBot[F[_]: Timer: ContextShift: ConcurrentEffect, A](
-    executorContext: ExecutionContext,
-    action: RichardPHJBensonBot[F] => F[A]
-  ): F[A] =
-    BlazeClientBuilder[F](executorContext).resource
-      .use { client =>
-        implicit val api: Api[F] = BotApi(client, baseUrl = s"https://api.telegram.org/bot$token")
-        action(new RichardPHJBensonBot[F](80, "google_cloud_platform_url"))
-      }
+  def buildBot[F[_], A](
+      executorContext: ExecutionContext,
+      action: RichardPHJBensonBot[F] => F[A]
+  )(implicit
+      timerF: Timer[F],
+      parallelF: Parallel[F],
+      contextShiftF: ContextShift[F],
+      concurrentEffectF: ConcurrentEffect[F]
+  ): F[A] = (for {
+    client <- BlazeClientBuilder[F](executorContext).resource
+    tk     <- token[F]
+  } yield (client, tk)).use(client_tk => {
+    implicit val api: Api[F] = BotApi(client_tk._1, baseUrl = s"https://api.telegram.org/bot${client_tk._2}")
+    action(new RichardPHJBensonBot[F]())
+  })
 }

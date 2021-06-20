@@ -8,13 +8,14 @@ import com.benkio.telegrambotinfrastructure._
 import cats.effect._
 import com.benkio.telegrambotinfrastructure.model._
 import telegramium.bots.high._
+import cats._
 
-class ABarberoBot[F[_]](port: Int, url: String)(implicit
-  timerF: Timer[F],
-  concurrentEffectF: ConcurrentEffect[F],
-  contextShiftF: ContextShift[F],
-  api: telegramium.bots.high.Api[F]
-) extends BotSkeleton[F](port, url)(timerF, concurrentEffectF, contextShiftF, api) {
+class ABarberoBot[F[_]]()(implicit
+    timerF: Timer[F],
+    parallelF: Parallel[F],
+    effectF: Effect[F],
+    api: telegramium.bots.high.Api[F]
+) extends BotSkeleton[F]()(timerF, parallelF, effectF, api) {
 
   override val resourceSource: ResourceSource = ABarberoBot.resourceSource
 
@@ -431,17 +432,22 @@ object ABarberoBot extends Configurations {
     )
   )
 
+  def token[F[_]](implicit effectF: Effect[F]): Resource[F, String] =
+    ResourceAccess.fileSystem.getResourceByteArray[F]("aBarberoBot.token").map(_.map(_.toChar).mkString)
+
   def buildBot[F[_], A](
-    executorContext: ExecutionContext,
-    action: ABarberoBot[F] => F[A]
+      executorContext: ExecutionContext,
+      action: ABarberoBot[F] => F[A]
   )(implicit
-    timerF: Timer[F],
-    contextShiftF: ContextShift[F],
-    concurrentEffectF: ConcurrentEffect[F]
-  ): F[A] =
-    BlazeClientBuilder[F](executorContext).resource
-      .use { client =>
-        implicit val api: Api[F] = BotApi(client, baseUrl = s"https://api.telegram.org/bot$token")
-        action(new ABarberoBot[F](80, "google_cloud_platform_url"))
-      }
+      timerF: Timer[F],
+      parallelF: Parallel[F],
+      contextShiftF: ContextShift[F],
+      concurrentEffectF: ConcurrentEffect[F]
+  ): F[A] = (for {
+    client <- BlazeClientBuilder[F](executorContext).resource
+    tk     <- token[F]
+  } yield (client, tk)).use(client_tk => {
+    implicit val api: Api[F] = BotApi(client_tk._1, baseUrl = s"https://api.telegram.org/bot${client_tk._2}")
+    action(new ABarberoBot[F]())
+  })
 }
