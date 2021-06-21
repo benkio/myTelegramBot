@@ -15,12 +15,12 @@ import cats._
 import com.lightbend.emoji.ShortCodes.Implicits._
 import com.lightbend.emoji.ShortCodes.Defaults._
 
-class CalandroBot[F[_]]()(implicit
+class CalandroBot[F[_]](port: Int, url: String)(implicit
     timerF: Timer[F],
-    parallelF: Parallel[F],
-    effectF: Effect[F],
+  concurrentEffectF: ConcurrentEffect[F],
+    contextShiftF: ContextShift[F],
     api: telegramium.bots.high.Api[F]
-) extends BotSkeleton[F]()(timerF, parallelF, effectF, api) {
+) extends BotSkeleton[F](port, url)(timerF, concurrentEffectF, contextShiftF, api) {
 
   override val resourceSource: ResourceSource = CalandroBot.resourceSource
 
@@ -60,7 +60,7 @@ class CalandroBot[F[_]]()(implicit
           ResourceSource
             .selectResourceAccess(All("calandro.db"))
             .getResourcesByKind("cards")
-            .use[F, List[MediaFile]](x => effectF.pure(x))
+            .use[F, List[MediaFile]](x => concurrentEffectF.pure(x))
         )
         .unsafeRunSync(),
       replySelection = RandomSelection
@@ -188,8 +188,6 @@ object CalandroBot extends Configurations {
       executorContext: ExecutionContext,
       action: CalandroBot[F] => F[A]
   )(implicit
-      timerF: Timer[F],
-      parallelF: Parallel[F],
       contextShiftF: ContextShift[F],
       concurrentEffectF: ConcurrentEffect[F]
   ): F[A] = (for {

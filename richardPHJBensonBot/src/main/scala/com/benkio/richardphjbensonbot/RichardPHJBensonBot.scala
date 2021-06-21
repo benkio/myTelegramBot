@@ -11,14 +11,14 @@ import com.benkio.telegrambotinfrastructure.model._
 import com.lightbend.emoji.ShortCodes.Implicits._
 import com.lightbend.emoji.ShortCodes.Defaults._
 import telegramium.bots.high._
-import cats._
 
-class RichardPHJBensonBot[F[_]]()(implicit
+
+class RichardPHJBensonBot[F[_]](port: Int, url: String)(implicit
     timerF: Timer[F],
-    parallelF: Parallel[F],
-    effectF: Effect[F],
+    concurrentEffectF: ConcurrentEffect[F],
+    contextShiftF: ContextShift[F],
     api: telegramium.bots.high.Api[F]
-) extends BotSkeleton[F]()(timerF, parallelF, effectF, api) {
+) extends BotSkeleton[F](port, url)(timerF, concurrentEffectF, contextShiftF, api) {
 
   override val resourceSource: ResourceSource = RichardPHJBensonBot.resourceSource
 
@@ -1933,8 +1933,6 @@ carattere '!':
       executorContext: ExecutionContext,
       action: RichardPHJBensonBot[F] => F[A]
   )(implicit
-      timerF: Timer[F],
-      parallelF: Parallel[F],
       contextShiftF: ContextShift[F],
       concurrentEffectF: ConcurrentEffect[F]
   ): F[A] = (for {

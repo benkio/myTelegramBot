@@ -8,14 +8,14 @@ import com.benkio.telegrambotinfrastructure._
 import cats.effect._
 import com.benkio.telegrambotinfrastructure.model._
 import telegramium.bots.high._
-import cats._
 
-class ABarberoBot[F[_]]()(implicit
+
+class ABarberoBot[F[_]](port: Int, url: String)(implicit
     timerF: Timer[F],
-    parallelF: Parallel[F],
-    effectF: Effect[F],
+  concurrentEffectF: ConcurrentEffect[F],
+  contextShiftF: ContextShift[F],
     api: telegramium.bots.high.Api[F]
-) extends BotSkeleton[F]()(timerF, parallelF, effectF, api) {
+) extends BotSkeleton[F](port, url)(timerF, concurrentEffectF, contextShiftF, api) {
 
   override val resourceSource: ResourceSource = ABarberoBot.resourceSource
 
@@ -439,8 +439,6 @@ object ABarberoBot extends Configurations {
       executorContext: ExecutionContext,
       action: ABarberoBot[F] => F[A]
   )(implicit
-      timerF: Timer[F],
-      parallelF: Parallel[F],
       contextShiftF: ContextShift[F],
       concurrentEffectF: ConcurrentEffect[F]
   ): F[A] = (for {
