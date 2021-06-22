@@ -31,6 +31,8 @@ class CalandroBotSpec extends AnyWordSpec {
       "try to open the file in resounces" in {
         CalandroBot.buildBot[IO, Unit](
           scala.concurrent.ExecutionContext.global,
+          "fake server url",
+          80,
           bot =>
             IO(
               bot.commandRepliesData
