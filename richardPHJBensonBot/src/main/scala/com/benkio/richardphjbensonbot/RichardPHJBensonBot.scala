@@ -7,18 +7,16 @@ import com.benkio.telegrambotinfrastructure.botCapabilities._
 import com.benkio.telegrambotinfrastructure._
 import cats.effect._
 import com.benkio.telegrambotinfrastructure.model._
-
 import com.lightbend.emoji.ShortCodes.Implicits._
 import com.lightbend.emoji.ShortCodes.Defaults._
 import telegramium.bots.high._
 
-
-class RichardPHJBensonBot[F[_]](port: Int, url: String)(implicit
+class RichardPHJBensonBot[F[_]](port: Int, url: String, path: String)(implicit
     timerF: Timer[F],
     concurrentEffectF: ConcurrentEffect[F],
     contextShiftF: ContextShift[F],
     api: telegramium.bots.high.Api[F]
-) extends BotSkeleton[F](port, url)(timerF, concurrentEffectF, contextShiftF, api) {
+) extends BotSkeleton[F](port, url, path)(timerF, concurrentEffectF, contextShiftF, api) {
 
   override val resourceSource: ResourceSource = RichardPHJBensonBot.resourceSource
 
@@ -1931,8 +1929,11 @@ carattere '!':
 
   def buildBot[F[_], A](
       executorContext: ExecutionContext,
+      url: String,
+      port: Int,
       action: RichardPHJBensonBot[F] => F[A]
   )(implicit
+      timer: Timer[F],
       contextShiftF: ContextShift[F],
       concurrentEffectF: ConcurrentEffect[F]
   ): F[A] = (for {
@@ -1940,6 +1941,6 @@ carattere '!':
     tk     <- token[F]
   } yield (client, tk)).use(client_tk => {
     implicit val api: Api[F] = BotApi(client_tk._1, baseUrl = s"https://api.telegram.org/bot${client_tk._2}")
-    action(new RichardPHJBensonBot[F]())
+    action(new RichardPHJBensonBot[F](port, url, client_tk._2))
   })
 }

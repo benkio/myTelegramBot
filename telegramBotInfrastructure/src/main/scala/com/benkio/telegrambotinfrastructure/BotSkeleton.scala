@@ -14,8 +14,9 @@ import cats.implicits._
 
 import scala.concurrent.duration._
 
-abstract class BotSkeleton[F[_]: Timer: ConcurrentEffect: ContextShift](port: Int, url: String)(implicit api: Api[F])
-    extends WebhookBot[F](api, port, url)
+abstract class BotSkeleton[F[_]: Timer: ConcurrentEffect: ContextShift](port: Int, url: String, path: String)(implicit
+    api: Api[F]
+) extends WebhookBot[F](api, port, url, path)
     with DefaultActions {
 
   // Configuration values /////////////////////////////////////////////////////

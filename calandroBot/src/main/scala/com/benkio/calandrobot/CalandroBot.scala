@@ -11,16 +11,19 @@ import com.benkio.telegrambotinfrastructure.model._
 import scala.util.Random
 import telegramium.bots.high._
 import telegramium.bots.Message
-import cats._
 import com.lightbend.emoji.ShortCodes.Implicits._
 import com.lightbend.emoji.ShortCodes.Defaults._
 
-class CalandroBot[F[_]](port: Int, url: String)(implicit
+class CalandroBot[F[_]](
+    port: Int,
+    url: String,
+    path: String
+)(implicit
     timerF: Timer[F],
-  concurrentEffectF: ConcurrentEffect[F],
+    concurrentEffectF: ConcurrentEffect[F],
     contextShiftF: ContextShift[F],
     api: telegramium.bots.high.Api[F]
-) extends BotSkeleton[F](port, url)(timerF, concurrentEffectF, contextShiftF, api) {
+) extends BotSkeleton[F](port, url, path)(timerF, concurrentEffectF, contextShiftF, api) {
 
   override val resourceSource: ResourceSource = CalandroBot.resourceSource
 
@@ -186,8 +189,11 @@ object CalandroBot extends Configurations {
 
   def buildBot[F[_], A](
       executorContext: ExecutionContext,
+      url: String,
+      port: Int,
       action: CalandroBot[F] => F[A]
   )(implicit
+      timer: Timer[F],
       contextShiftF: ContextShift[F],
       concurrentEffectF: ConcurrentEffect[F]
   ): F[A] = (for {
@@ -195,6 +201,6 @@ object CalandroBot extends Configurations {
     tk     <- token[F]
   } yield (client, tk)).use(client_tk => {
     implicit val api: Api[F] = BotApi(client_tk._1, baseUrl = s"https://api.telegram.org/bot${client_tk._2}")
-    action(new CalandroBot[F]())
+    action(new CalandroBot[F](port, url, client_tk._2))
   })
 }
