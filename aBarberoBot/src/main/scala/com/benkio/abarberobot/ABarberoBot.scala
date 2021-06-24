@@ -1,7 +1,6 @@
 package com.benkio.abarberobot
 
-import org.http4s.client.blaze._
-import scala.concurrent.ExecutionContext
+import org.http4s.client.Client
 import com.benkio.telegrambotinfrastructure.Configurations
 import com.benkio.telegrambotinfrastructure.botCapabilities._
 import com.benkio.telegrambotinfrastructure._
@@ -435,16 +434,16 @@ object ABarberoBot extends Configurations {
     ResourceAccess.fileSystem.getResourceByteArray[F]("aBarberoBot.token").map(_.map(_.toChar).mkString)
 
   def buildBot[F[_], A](
-      executorContext: ExecutionContext,
       url: String,
       port: Int,
+      httpClient: Resource[F, Client[F]],
       action: ABarberoBot[F] => F[A]
   )(implicit
       timer: Timer[F],
       contextShiftF: ContextShift[F],
       concurrentEffectF: ConcurrentEffect[F]
   ): F[A] = (for {
-    client <- BlazeClientBuilder[F](executorContext).resource
+    client <- httpClient
     tk     <- token[F]
   } yield (client, tk)).use(client_tk => {
     implicit val api: Api[F] = BotApi(client_tk._1, baseUrl = s"https://api.telegram.org/bot${client_tk._2}")

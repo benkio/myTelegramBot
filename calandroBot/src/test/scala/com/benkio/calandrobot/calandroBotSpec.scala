@@ -1,5 +1,6 @@
 package com.benkio.calandrobot
 
+import org.http4s.client.Client
 import com.benkio.telegrambotinfrastructure.botCapabilities.ResourceSource
 import org.scalatest._
 import cats.effect._
@@ -30,9 +31,9 @@ class CalandroBotSpec extends AnyWordSpec {
     "never raise an exception" when {
       "try to open the file in resounces" in {
         CalandroBot.buildBot[IO, Unit](
-          scala.concurrent.ExecutionContext.global,
           "fake server url",
           80,
+          Resource.pure[IO, Client[IO]](null),
           bot =>
             IO(
               bot.commandRepliesData

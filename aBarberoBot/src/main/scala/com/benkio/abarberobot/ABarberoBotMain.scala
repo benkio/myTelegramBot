@@ -1,12 +1,12 @@
 package com.benkio.abarberobot
 
+import org.http4s.client.Client
 import cats.effect._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object ABarberoBotMain extends IOApp {
-  def runWebook(url: String, port: Int): IO[Unit] =
+  def runWebook(url: String, port: Int, httpClient: Resource[IO, Client[IO]]): IO[Unit] =
     ABarberoBot
-      .buildBot[IO, Unit](global, url, port, (ab: ABarberoBot[IO]) => ab.start().use { _ => IO.never })
+      .buildBot[IO, Unit](url, port, httpClient, (ab: ABarberoBot[IO]) => ab.start().use { _ => IO.never })
 
-    def run(args: List[String]): IO[ExitCode] = IO(ExitCode.Success)
+  def run(args: List[String]): IO[ExitCode] = IO(ExitCode.Success)
 }
