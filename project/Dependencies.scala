@@ -10,6 +10,7 @@ object Dependencies {
     val sqliteJdbcVersion     = "3.34.0"
     val randomVersion         = "0.0.2"
     val lightbendEmojiVersion = "1.2.3"
+    val lightbendConfig       = "1.4.1"
   }
   lazy val libs = new  {
     val test            = "org.scalatest" %% "scalatest" % dependenciesVersion.scalaTestVersion % Test
@@ -20,6 +21,7 @@ object Dependencies {
     val sqliteJdbc      = "org.xerial" %  "sqlite-jdbc" % dependenciesVersion.sqliteJdbcVersion
     val random          = "io.chrisdavenport" % "random_2.13" % dependenciesVersion.randomVersion
     val lightbendEmoji  = "com.lightbend" %% "emoji" % dependenciesVersion.lightbendEmojiVersion
+    val lightbendConfig =  "com.typesafe" % "config" % dependenciesVersion.lightbendConfig
   }
 
   val TelegramBotInfrastructureDependencies: Seq[ModuleID] = Seq(
@@ -56,6 +58,7 @@ object Dependencies {
   )
 
   val MainDependencies: Seq[ModuleID] = Seq(
-    libs.catsEffect
+    libs.catsEffect,
+    libs.lightbendConfig
   )
 }
