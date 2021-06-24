@@ -12,10 +12,11 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = for {
     url  <- getUrl()
     port <- getPort()
-    httpClient = BlazeClientBuilder[IO](global).resource
-    _ <- (RichardPHJBensonBotMain.runWebook(url, port, httpClient) &>
-      CalandroBotMain.runWebook(url, port, httpClient) &>
-      ABarberoBotMain.runWebook(url, port, httpClient))
+    _ <- BlazeClientBuilder[IO](global).resource.use { httpClient =>
+      (RichardPHJBensonBotMain.runWebook(url, port, httpClient) &>
+        CalandroBotMain.runWebook(url, port, httpClient) &>
+        ABarberoBotMain.runWebook(url, port, httpClient))
+    }
   } yield ExitCode.Success
 
   def getPort(): IO[Int]   = IO(ConfigFactory.load().getInt("webhook.port"))

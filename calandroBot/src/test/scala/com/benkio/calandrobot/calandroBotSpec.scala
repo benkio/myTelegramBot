@@ -1,6 +1,5 @@
 package com.benkio.calandrobot
 
-import org.http4s.client.Client
 import com.benkio.telegrambotinfrastructure.botCapabilities.ResourceSource
 import org.scalatest._
 import cats.effect._
@@ -33,7 +32,7 @@ class CalandroBotSpec extends AnyWordSpec {
         CalandroBot.buildBot[IO, Unit](
           "fake server url",
           80,
-          Resource.pure[IO, Client[IO]](null),
+          null,
           bot =>
             IO(
               bot.commandRepliesData

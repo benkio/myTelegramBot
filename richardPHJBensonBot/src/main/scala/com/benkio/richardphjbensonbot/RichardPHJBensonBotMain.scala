@@ -4,7 +4,7 @@ import org.http4s.client.Client
 import cats.effect._
 
 object RichardPHJBensonBotMain extends IOApp {
-  def runWebook(url: String, port: Int, httpClient: Resource[IO, Client[IO]]): cats.effect.IO[cats.effect.ExitCode] =
+  def runWebook(url: String, port: Int, httpClient: Client[IO]): cats.effect.IO[cats.effect.ExitCode] =
     RichardPHJBensonBot
       .buildBot(url, port, httpClient, (rb: RichardPHJBensonBot[IO]) => rb.start().use { _ => IO.never })
 

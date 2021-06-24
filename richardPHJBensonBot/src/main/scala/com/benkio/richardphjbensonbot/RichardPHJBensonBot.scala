@@ -1929,17 +1929,14 @@ carattere '!':
   def buildBot[F[_], A](
       url: String,
       port: Int,
-      httpClient: Resource[F, Client[F]],
+      httpClient: Client[F],
       action: RichardPHJBensonBot[F] => F[A]
   )(implicit
       timer: Timer[F],
       contextShiftF: ContextShift[F],
       concurrentEffectF: ConcurrentEffect[F]
-  ): F[A] = (for {
-    client <- httpClient
-    tk     <- token[F]
-  } yield (client, tk)).use(client_tk => {
-    implicit val api: Api[F] = BotApi(client_tk._1, baseUrl = s"https://api.telegram.org/bot${client_tk._2}")
-    action(new RichardPHJBensonBot[F](port, url, client_tk._2))
+  ): F[A] = token[F].use(tk => {
+    implicit val api: Api[F] = BotApi(httpClient, baseUrl = s"https://api.telegram.org/bot$tk")
+    action(new RichardPHJBensonBot[F](port, url, tk))
   })
 }
