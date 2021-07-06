@@ -12,19 +12,17 @@ class CalandroBotSpec extends AnyWordSpec {
   implicit val contextshiftIO: ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   def testFilename(filename: String): Assertion =
-    if (
-      Effect
-        .toIOFromRunAsync(
-          ResourceSource
-            .selectResourceAccess(CalandroBot.resourceSource)
-            .getResourceByteArray[IO](filename)
-            .use[IO, Array[Byte]](x => IO.pure(x))
-        )
-        .unsafeRunSync()
-        .isEmpty
-    )
-      fail(s"$filename cannot be found")
-    else succeed
+    Effect
+      .toIOFromRunAsync(
+        ResourceSource
+          .selectResourceAccess(CalandroBot.resourceSource)
+          .getResourceByteArray[IO](filename)
+          .use[IO, Array[Byte]](IO.pure)
+          .attempt
+      )
+      .unsafeRunSync()
+      .filterOrElse(_.nonEmpty, (x: Array[Byte]) => x)
+      .fold(_ => fail(s"$filename cannot be found"), _ => succeed)
 
   "commandRepliesData" should {
     "never raise an exception" when {
